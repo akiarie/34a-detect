@@ -345,16 +345,12 @@ vote_boxes, height = get_vote_boxes()
 
 for box_name in vote_boxes:
     (x, y, w, h) = vote_boxes[box_name]
-    draw(image, x, y, w, h, box_name)
+    crop_img = image[y:y+h, x:x+w]
+    cv2.imwrite(f"votes-{box_name}.png", crop_img)
 
 stat_boxes = get_stat_boxes(height)
 
 for box_name in stat_boxes:
     (x, y, w, h) = stat_boxes[box_name]
-    draw(image, x, y, w, h, box_name)
-
-
-
-# show the output image
-cv2.imshow("Image", image)
-cv2.waitKey(0)
+    crop_img = image[y:y+h, x:x+w]
+    cv2.imwrite(f"stats-{box_name}.png", crop_img)
