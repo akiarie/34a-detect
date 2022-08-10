@@ -63,8 +63,14 @@ distances = {
     "DAVID_mid": 11.8,
     "GEORGE_mid": 11.1,
 
+    "Polling_mid": 6.95,
+    "Station_mid": 5.9,
+    "mid_Decision": 2.2,
+    "mid_dispute": 4.3,
+
     "Vote_Width": 4.0,
-    "Stats_Width": 2.4,
+    "Stats_Width": 1.9,
+    "SV_Height_Ratio": 1.3/1.5,
 }
 
 def get_scale():
@@ -91,7 +97,51 @@ def get_scale():
 
     return sum(estimates)/len(estimates)
 
-def compute_boxes():
+
+def get_stat_boxes(height):
+    scale = get_scale()
+    m = get_page_slope()
+
+    y_est = []
+    x_est = []
+
+    for left in coords["stats"]["left"]:
+        x, y = getcoords(left)
+        name = left["text"]
+        delta = distances[f"{name}_mid"]*scale
+        x_est += [x + delta]
+        y_est += [y + (delta * m)]
+
+    for right in coords["stats"]["right"]:
+        x, cy = getcoords(right)
+        name = right["text"]
+        delta = distances[f"mid_{name}"]*scale
+        x_est += [x - delta]
+        y_est += [y - (delta * m)]
+
+
+    w = int(distances["Stats_Width"]*scale)
+    x = int(sum(x_est) / len(x_est))
+    y = int((sum(y_est) / len(y_est))-0.05*scale)
+    h = int(height*distances["SV_Height_Ratio"])
+
+    boxes = {}
+    field_heights = {
+        "registered": y + h,
+        "rejected": y + 2*h,
+        "rejobj": y + 3*h,
+        "disputed": y + 4*h,
+        "cast": y + 5*h,
+    }
+    h_adj = int(h+0.1*scale)
+    for field in field_heights:
+        boxes[field] = (x, field_heights[field], w, h_adj)
+
+    boxes["stats"] = (x, field_heights["registered"], w, int(h*5+0.1*scale))
+
+    return boxes
+
+def get_vote_boxes():
     scale = get_scale()
     m = get_page_slope()
 
@@ -110,10 +160,23 @@ def compute_boxes():
 
     w = int(distances["Vote_Width"]*scale)
     x = int(sum(x_est) / len(x_est))
-    h = int((sum(h_est) / len(h_est)) + 0.1*scale)
+    h = int((sum(h_est) / len(h_est)))
 
-    print(f"({x}, {y}) dim ({w}, {h})")
-    draw(image, x, y, w, h, "wajackoyah votes")
+    boxes = {}
+    cand_heights = {
+        "raila": y - 3*h,
+        "ruto": y - 2*h,
+        "mwaure": y - h,
+        "wajackoyah": y,
+    }
+    h_adj = int(h+0.1*scale)
+    for cand in cand_heights:
+        boxes[cand] = (x, cand_heights[cand], w, h_adj) 
+
+    boxes["votes"] = (x, cand_heights["raila"], w, int(h*4+0.1*scale))
+
+    return boxes, h
+
 
 
 def surreq(reqfunc, st):
@@ -278,7 +341,19 @@ for i in range(0, len(results["text"])):
 if state is not None:
     raise Exception(f"unable to conclude state {state}")
 
-compute_boxes()
+vote_boxes, height = get_vote_boxes()
+
+for box_name in vote_boxes:
+    (x, y, w, h) = vote_boxes[box_name]
+    draw(image, x, y, w, h, box_name)
+
+stat_boxes = get_stat_boxes(height)
+
+for box_name in stat_boxes:
+    (x, y, w, h) = stat_boxes[box_name]
+    draw(image, x, y, w, h, box_name)
+
+
 
 # show the output image
 cv2.imshow("Image", image)
