@@ -1,15 +1,41 @@
+import tempfile
+
+import cv2
+import numpy as np
+from PIL import Image
+
 # https://pyimagesearch.com/2020/05/25/tesseract-ocr-text-localization-and-detection/
 from pytesseract import Output
 import pytesseract
 import cv2
 
 import math
+import os
+
+import sys
+
+if len(sys.argv) != 3:
+    sys.exit("must give input file and output directory")
+
+input_file, output_dir = sys.argv[1], sys.argv[2]
+
+if not os.path.exists(input_file):
+    sys.exit("input file does not exist")
+
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 MIN_CONF = 0
 
-image = cv2.imread("gatundu-south.png")
-rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-results = pytesseract.image_to_data(rgb, output_type=Output.DICT)
+image = cv2.imread(input_file)
+
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+
+image = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+
+results = pytesseract.image_to_data(image, output_type=Output.DICT)
+
 
 
 coords = {
@@ -151,12 +177,18 @@ def get_vote_boxes():
     y = 0
 
     for cand in coords["candidates"]:
-        h_est += [cand["dimensions"]["h"]]
+        h_here = cand["dimensions"]["h"]
+        h_est += [h_here]
         cx, cy = getcoords(cand)
         name = cand["text"]
         delta = distances[f"{name}_mid"]*scale
         x_est += [cx + delta]
-        y = int(cy + (delta * m) - 0.05*scale)
+        if name == "WILLIAM":
+            y = int(cy + 2*h_here + (delta * m) - 0.05*scale)
+        elif name == "DAVID":
+            y = int(cy + h_here + (delta * m) - 0.05*scale)
+        elif name == "GEORGE":
+            y = int(cy + (delta * m) - 0.05*scale)
 
     w = int(distances["Vote_Width"]*scale)
     x = int(sum(x_est) / len(x_est))
@@ -196,6 +228,19 @@ def blockreq(levels):
         return True
     return _blockreq
 
+def permitmany(options, nextst):
+    def _permit(result):
+        for s in options:
+            if result["text"].startswith(s):
+                result["text"] = s
+                return nextst, True
+        nextst2, should_draw = nextst(result)
+        if should_draw:
+            return nextst2, True
+        return _permit, False
+    return _permit
+
+
 
 def permit(s, nextst):
     def _permit(result):
@@ -234,13 +279,6 @@ def st_title(result):
 
     return st_title, False
 
-def st_george(result):
-    if result["text"].startswith("GEORGE"):
-        result["text"] = "GEORGE"
-        coords["candidates"] += [result]
-        return st_stats, True
-    return st_george, False
-
 def st_candidates(result):
     l = result["levels"]
     nl = {"block": l["block"], "par": l["par"], "line": l["line"] + 1}
@@ -248,12 +286,17 @@ def st_candidates(result):
     if result["text"].startswith("WILLIAM"):
         result["text"] = "WILLIAM"
         coords["candidates"] += [result]
-        return surreq(blockreq(nl), permit("DAVID", st_george)), True
+        return permitmany(["DAVID", "GEORGE"], st_stats), True
 
     if result["text"].startswith("DAVID"):
         result["text"] = "DAVID"
         coords["candidates"] += [result]
-        return surreq(blockreq(nl), st_george), True
+        return surreq(blockreq(nl), permit("GEORGE", st_stats)), True
+
+    if result["text"].startswith("GEORGE"):
+        result["text"] = "GEORGE"
+        coords["candidates"] += [result]
+        return st_stats, True
 
     return st_candidates, False
 
@@ -332,25 +375,26 @@ for i in range(0, len(results["text"])):
         w, h = result["dimensions"]["w"], result["dimensions"]["h"]
         l = result["levels"]
         text = result["text"]
-        print(f"{text} — {conf} at ({x}, {y}) dim ({w}, {h}) on {l}")
         draw(image, x, y, w, h, text)
 
     if state is None:
         break
 
 if state is not None:
-    raise Exception(f"unable to conclude state {state}")
+    print(f"unable to conclude state {state}")
+    cv2.imshow("Image", image)
+    cv2.waitKey(0)
 
 vote_boxes, height = get_vote_boxes()
 
 for box_name in vote_boxes:
     (x, y, w, h) = vote_boxes[box_name]
     crop_img = image[y:y+h, x:x+w]
-    cv2.imwrite(f"votes-{box_name}.png", crop_img)
+    cv2.imwrite(os.path.join(output_dir, f"votes-{box_name}.png"), crop_img)
 
 stat_boxes = get_stat_boxes(height)
 
 for box_name in stat_boxes:
     (x, y, w, h) = stat_boxes[box_name]
     crop_img = image[y:y+h, x:x+w]
-    cv2.imwrite(f"stats-{box_name}.png", crop_img)
+    cv2.imwrite(os.path.join(output_dir, f"stats-{box_name}.png"), crop_img)
