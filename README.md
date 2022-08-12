@@ -9,7 +9,7 @@ pip3 install -r requirements.json
 
 Include your Azure credentials in an .env file:
 ```bash
-ENDPOINT=  		  # Azure instance endpoint
+ENDPOINT=         # Azure instance endpoint
 SUBSCRIPTION_KEY= # Azure subcription key
 ```
 
