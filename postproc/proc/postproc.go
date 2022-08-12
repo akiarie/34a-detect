@@ -94,14 +94,20 @@ func nearest4Y(ref *line, lines []line) ([]line, error) {
 	return lines[:4], nil
 }
 
-func linesToInts(lines []line) ([]int, error) {
+func linesToPosInts(lines []line) ([]int, error) {
+	abs := func(n int) int {
+		if n > 0 {
+			return n
+		}
+		return n
+	}
 	results := make([]int, 4)
 	for i, l := range lines[:4] {
 		n, err := strconv.Atoi(l.Text)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse number %q", l.Text)
 		}
-		results[i] = n
+		results[i] = abs(n)
 	}
 	return results, nil
 }
@@ -148,7 +154,6 @@ func getCandidateRegionBounds(lines []line) (*bounds, error) {
 	tops := filterLines(lines, func(l line) bool {
 		return stringHasSeqMin(l.Text, topMatchMin, toptxt)
 	})
-	fmt.Println("tops", tops)
 	if len(tops) < 1 {
 		return nil, fmt.Errorf("cannot find upper bound")
 	}
@@ -164,7 +169,6 @@ func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("bounds", bounds)
 	candLine, err := getLineContainingNames(lines)
 	if err != nil {
 		return nil, err
@@ -182,7 +186,7 @@ func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 	if err != nil {
 		return nil, err
 	}
-	results, err := linesToInts(nearLines)
+	results, err := linesToPosInts(nearLines)
 	if err != nil {
 		panic(err)
 	}
@@ -194,15 +198,43 @@ func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 	}, nil
 }
 
+type VoteStats struct {
+	Registered       int `json:"registered"`
+	Rejected         int `json:"rejected"`
+	RejectedObjected int `json:"rejected_objected"`
+	Disputed         int `json:"disputed"`
+	ValidCast        int `json:"valid_cast"`
+}
+
+func getVoteStatsRegionBounds(lines []line) (*bounds, error) {
+	toptxt := "Polling Station Counts"
+	tops := filterLines(lines, func(l line) bool {
+		return stringHasSeqMin(l.Text, topMatchMin, toptxt)
+	})
+	if len(tops) < 1 {
+		return nil, fmt.Errorf("cannot find upper bound")
+	}
+	bots := filterLines(lines, func(l line) bool {
+		return strings.Contains(l.Text, "Declaration")
+	})
+	if len(bots) != 1 {
+		return nil, fmt.Errorf("cannot find lower bound")
+	}
+	return &bounds{tops[0].Box.topleft().y, bots[0].Box.topleft().y}, nil
+}
+
+func getVoteStats(cv *CandidateVotes, lines []line) (*VoteStats, error) {
+	bounds, err := getCandidateRegionBounds(lines)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(bounds)
+	return nil, fmt.Errorf("NOT IMPLEMENTED")
+}
+
 type form34A struct {
-	Candidates CandidateVotes `json:"candidate_votes"`
-	Statistics struct {
-		Registered       int `json:"registered"`
-		Rejected         int `json:"rejected"`
-		RejectedObjected int `json:"rejected_objected"`
-		Disputed         int `json:"disputed"`
-		ValidCast        int `json:"valid_cast"`
-	} `json:"statistics"`
+	Candidates *CandidateVotes `json:"candidate_votes"`
+	Statistics *VoteStats      `json:"statistics"`
 }
 
 func Parse34A(result []byte) (*form34A, error) {
@@ -214,6 +246,9 @@ func Parse34A(result []byte) (*form34A, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get candidate votes: %s", err)
 	}
-	fmt.Println(cv)
-	return nil, fmt.Errorf("NOT IMPLEMENTED")
+	stats, err := getVoteStats(cv, lines)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get vote stats: %s", err)
+	}
+	return &form34A{cv, stats}, nil
 }
