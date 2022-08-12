@@ -3,7 +3,6 @@
 *.png
 *.jpg
 output.txt
-postproc
 venv
 .env
 __pycache__
