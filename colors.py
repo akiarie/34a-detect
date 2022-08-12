@@ -1,4 +1,4 @@
-class Coolors:
+class Colors:
     CEND      = '\33[0m'
     CBOLD     = '\33[1m'
     CITALIC   = '\33[3m'

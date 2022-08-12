@@ -6,7 +6,7 @@ import editdistance
 import matplotlib.pyplot as plt 
 
 import easyocr
-from coolors import Coolors
+from colors import Colors
 from ms_read_api import ReadApi, show_image
 from tqdm import tqdm 
 from pprint import pprint 
@@ -142,11 +142,11 @@ def process_candidate_info(read_result):
                         pprint(after_results[:5])
                         return
 
-                    # print(f"{Coolors.CRED} CANDIDATE: {Coolors.CGREEN} {line.text} {Coolors.CEND}")
-                    # print(f"{Coolors.CRED} CANDIDATE COORDINATES: {Coolors.CGREEN} {candidate_top_left} {Coolors.CEND}")
+                    # print(f"{Colors.CRED} CANDIDATE: {Colors.CGREEN} {line.text} {Colors.CEND}")
+                    # print(f"{Colors.CRED} CANDIDATE COORDINATES: {Colors.CGREEN} {candidate_top_left} {Colors.CEND}")
                     # candidate_votes = process_candidate_votes(candidate_top_left, votes)
-                    # print(f"{Coolors.CGREEN}VOTES: {candidate_votes['votes']}{Coolors.CEND}")
-                    # print(f"{Coolors.CBEIGE}{'='*50}{Coolors.CEND}")
+                    # print(f"{Colors.CGREEN}VOTES: {candidate_votes['votes']}{Colors.CEND}")
+                    # print(f"{Colors.CBEIGE}{'='*50}{Colors.CEND}")
 
 index = 0
 for image_path in image_paths:
@@ -158,6 +158,6 @@ for image_path in image_paths:
         read_result, 
         result_image_name = f"{(image_path[:-4]).split('/')[-1]}", 
         results=False)
-    print(f"{Coolors.CBLUE}{image_path}{Coolors.CEND}")
+    print(f"{Colors.CBLUE}{image_path}{Colors.CEND}")
     process_candidate_info(read_result)
     index += 1
