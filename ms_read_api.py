@@ -23,7 +23,10 @@ class ReadApi():
     def __init__(self, image_path):
         super(ReadApi, self).__init__()
         config = dotenv_values(".env")
-        computervision_client = ComputerVisionClient(config['ENDPOINT'], CognitiveServicesCredentials(config['SUBSCRIPTION_KEY']))
+        computervision_client = ComputerVisionClient(
+            config['ENDPOINT'], 
+            CognitiveServicesCredentials(config['SUBSCRIPTION_KEY'])
+        )
 
         self.image_path = image_path
         self.computervision_client = computervision_client
@@ -57,4 +60,4 @@ class ReadApi():
                     image = cv2.putText(image, line.text, (top_left[0], top_left[1]), cv2.FONT_HERSHEY_SIMPLEX, 
                         2, (255,0,0), 2, cv2.LINE_AA)
 
-            cv2.imwrite(f"{result_image_name}.jpg", image)
+            cv2.imwrite(f"{result_image_name}", image)
