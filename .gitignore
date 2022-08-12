@@ -2,7 +2,7 @@
 *.swp
 *.png
 *.jpg
-*.txt
+output.txt
 venv
 .env
 __pycache__
