@@ -42,11 +42,13 @@ type CandidateVotes struct {
 	Ruto       int `json:"ruto"`
 	Waihiga    int `json:"waihiga"`
 	Wajackoyah int `json:"wajackoyah"`
+	total      int
 }
 
 func (cv CandidateVotes) String() string {
-	return fmt.Sprintf("{Odinga: %d, Ruto: %d, Waihiga: %d, Wajackoyah: %d}",
-		cv.Odinga, cv.Ruto, cv.Waihiga, cv.Wajackoyah)
+	return fmt.Sprintf(
+		"{Odinga: %d, Ruto: %d, Waihiga: %d, Wajackoyah: %d, total: %d}",
+		cv.Odinga, cv.Ruto, cv.Waihiga, cv.Wajackoyah, cv.total)
 }
 
 func (cv *CandidateVotes) sum() int {
@@ -80,18 +82,12 @@ func filterLines(lines []line, key func(line) bool) []line {
 	return sieved
 }
 
-func distYBR(l1, l2 *line) float64 {
-	return math.Abs(l1.Box.botright().y - l2.Box.botright().y)
+func distXBR(l1, l2 *line) float64 {
+	return math.Abs(l1.Box.botright().x - l2.Box.botright().x)
 }
 
-func nearest4Y(ref *line, lines []line) ([]line, error) {
-	if len(lines) < 4 {
-		return nil, fmt.Errorf("cannot find 4 closest numeric values")
-	}
-	sort.Slice(lines, func(i, j int) bool {
-		return distYBR(ref, &lines[i]) < distYBR(ref, &lines[j])
-	})
-	return lines[:4], nil
+func distYBR(l1, l2 *line) float64 {
+	return math.Abs(l1.Box.botright().y - l2.Box.botright().y)
 }
 
 func linesToPosInts(lines []line) ([]int, error) {
@@ -99,10 +95,10 @@ func linesToPosInts(lines []line) ([]int, error) {
 		if n > 0 {
 			return n
 		}
-		return n
+		return -n
 	}
-	results := make([]int, 4)
-	for i, l := range lines[:4] {
+	results := make([]int, len(lines))
+	for i, l := range lines[:len(lines)] {
 		n, err := strconv.Atoi(l.Text)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse number %q", l.Text)
@@ -112,6 +108,8 @@ func linesToPosInts(lines []line) ([]int, error) {
 	return results, nil
 }
 
+// stringHasSeqMin: returns a value indicating whether s contains at least min
+// of the provided words in whole in sequence
 func stringHasSeqMin(s string, min int, whole string) bool {
 	var last, found int
 	seq := strings.Split(whole, " ")
@@ -119,6 +117,9 @@ func stringHasSeqMin(s string, min int, whole string) bool {
 		if i := strings.Index(s[last:], elem); i != -1 {
 			found++
 			last += i + len(elem)
+		}
+		if found >= min {
+			return true
 		}
 	}
 	return found >= min
@@ -182,20 +183,28 @@ func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 		return candLine.Box.topleft().x < tl.x &&
 			bounds.top <= tl.y && tl.y <= bounds.bot
 	})
-	nearLines, err := nearest4Y(candLine, flines)
-	if err != nil {
-		return nil, err
+	if len(flines) < 4 {
+		return nil, fmt.Errorf("cannot find 4 closest numeric values")
 	}
-	results, err := linesToPosInts(nearLines)
+	sort.Slice(flines, func(i, j int) bool {
+		return flines[i].Box.topleft().y < flines[j].Box.topleft().y
+	})
+	results, err := linesToPosInts(flines)
 	if err != nil {
 		panic(err)
 	}
-	return &CandidateVotes{
+	cv := &CandidateVotes{
 		Odinga:     results[0],
 		Ruto:       results[1],
 		Waihiga:    results[2],
 		Wajackoyah: results[3],
-	}, nil
+	}
+	if len(results) == 5 {
+		cv.total = results[4]
+	} else {
+		cv.total = -1
+	}
+	return cv, nil
 }
 
 type VoteStats struct {
@@ -206,35 +215,85 @@ type VoteStats struct {
 	ValidCast        int `json:"valid_cast"`
 }
 
-func getVoteStatsRegionBounds(lines []line) (*bounds, error) {
+func (s *VoteStats) totalcast() int {
+	return s.Rejected + s.RejectedObjected + s.Disputed + s.ValidCast
+}
+
+func getVoteStatsRegionBounds(lines []line) (*bounds, *line, error) {
 	toptxt := "Polling Station Counts"
 	tops := filterLines(lines, func(l line) bool {
-		return stringHasSeqMin(l.Text, topMatchMin, toptxt)
+		return stringHasSeqMin(l.Text, 3, toptxt)
 	})
 	if len(tops) < 1 {
-		return nil, fmt.Errorf("cannot find upper bound")
+		return nil, nil, fmt.Errorf("cannot find upper bound")
 	}
 	bots := filterLines(lines, func(l line) bool {
 		return strings.Contains(l.Text, "Declaration")
 	})
 	if len(bots) != 1 {
-		return nil, fmt.Errorf("cannot find lower bound")
+		return nil, nil, fmt.Errorf("cannot find lower bound")
 	}
-	return &bounds{tops[0].Box.topleft().y, bots[0].Box.topleft().y}, nil
+	return &bounds{
+		tops[0].Box.topleft().y,
+		bots[0].Box.topleft().y,
+	}, &tops[0], nil
 }
 
 func getVoteStats(cv *CandidateVotes, lines []line) (*VoteStats, error) {
-	bounds, err := getCandidateRegionBounds(lines)
+	bounds, pscLine, err := getVoteStatsRegionBounds(lines)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(bounds)
-	return nil, fmt.Errorf("NOT IMPLEMENTED")
+	// filter for numeric values with greater x-coordinate
+	flines := filterLines(lines, func(l line) bool {
+		if _, err := strconv.Atoi(l.Text); err != nil {
+			return false
+		}
+		tl := l.Box.topleft()
+		return pscLine.Box.topright().x < tl.x &&
+			bounds.top <= tl.y && tl.y <= bounds.bot
+	})
+	sort.Slice(flines, func(i, j int) bool {
+		return flines[i].Box.topleft().x < flines[j].Box.topleft().x
+	})
+	if len(flines) > 5 {
+		flines = flines[:5]
+	}
+	sort.Slice(flines, func(i, j int) bool {
+		return flines[i].Box.topleft().y < flines[j].Box.topleft().y
+	})
+	results, err := linesToPosInts(flines)
+	if err != nil {
+		panic(err)
+	}
+	// here:
+	if len(results) < 5 {
+		if cv.total == -1 || len(results) < 4 {
+			return nil, fmt.Errorf("no possible total value")
+		}
+		results[4] = cv.total
+	} else if cv.total != -1 {
+		if cv.sum() != results[4] {
+			results[4] = cv.total
+		}
+	}
+	return &VoteStats{
+		Registered:       results[0],
+		Rejected:         results[1],
+		RejectedObjected: results[2],
+		Disputed:         results[3],
+		ValidCast:        results[4],
+	}, nil
 }
 
 type form34A struct {
 	Candidates *CandidateVotes `json:"candidate_votes"`
 	Statistics *VoteStats      `json:"statistics"`
+}
+
+func (f *form34A) verify() bool {
+	return f.Candidates.sum() == f.Statistics.ValidCast &&
+		f.Statistics.totalcast() < f.Statistics.Registered
 }
 
 func Parse34A(result []byte) (*form34A, error) {
@@ -250,5 +309,10 @@ func Parse34A(result []byte) (*form34A, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get vote stats: %s", err)
 	}
-	return &form34A{cv, stats}, nil
+	f := &form34A{cv, stats}
+	if !f.verify() {
+		return nil, fmt.Errorf("form not verified")
+	}
+	return f, nil
+
 }
