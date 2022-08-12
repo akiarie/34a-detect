@@ -20,17 +20,16 @@ def show_image(image, title="image"):
     cv2.destroyAllWindows()
     
 class ReadApi():
-    def __init__(self, image_url = "./image_data/sample.jpg"):
+    def __init__(self, image_path):
         super(ReadApi, self).__init__()
         config = dotenv_values(".env")
-        computervision_client = ComputerVisionClient(config['endpoint'], CognitiveServicesCredentials(config['subscription_key']))
+        computervision_client = ComputerVisionClient(config['ENDPOINT'], CognitiveServicesCredentials(config['SUBSCRIPTION_KEY']))
 
-        self.image_url = image_url
+        self.image_path = image_path
         self.computervision_client = computervision_client
 
-
     def process_image(self):
-        with open(self.image_url, "rb") as image_stream:
+        with open(self.image_path, "rb") as image_stream:
             read_response = self.computervision_client.read_in_stream(
                 image=image_stream,
                 mode="Printed",
@@ -45,7 +44,8 @@ class ReadApi():
             time.sleep(1)
         return read_result
 
-    def visualize_results(self, image, read_result, result_image_name = "result", results = False):
+    def visualize_results(self, read_result, result_image_name = "result"):
+        image = read_image(self.image_path)
         if read_result.status == OperationStatusCodes.succeeded:
             for text_result in read_result.analyze_result.read_results:
                 for line in tqdm(text_result.lines):
@@ -56,18 +56,5 @@ class ReadApi():
                     image = cv2.rectangle(image, top_left, bottom_right, color, thickness)
                     image = cv2.putText(image, line.text, (top_left[0], top_left[1]), cv2.FONT_HERSHEY_SIMPLEX, 
                         2, (255,0,0), 2, cv2.LINE_AA)
-        if results:
-            return image
-        else:
-            print(result_image_name)
+
             cv2.imwrite(f"{result_image_name}.jpg", image)
-            return None
-
-
-if __name__ == "__main__":
-    image_url = "./image_data/sample.jpg"
-    image = read_image(image_url)
-    readApi = ReadApi(image_url = image_url)
-    read_result = readApi.process_image()
-    image = readApi.visualize_results(image, read_result, results=True)
-    show_image(image)
