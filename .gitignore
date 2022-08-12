@@ -6,3 +6,4 @@ output.txt
 venv
 .env
 __pycache__
+*.tgz
