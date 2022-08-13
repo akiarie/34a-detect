@@ -78,6 +78,18 @@ func getCandidateRegionBounds(lines []line) (*bounds, error) {
 	return &bounds{tops[0].Box.topleft().y, bot.Box.topleft().y}, nil
 }
 
+func getCVTotal(results []int) (int, error) {
+	switch len(results) {
+	case 5:
+		fmt.Println(results[4])
+		return results[4], nil
+	case 4:
+		return -1, nil
+	default:
+		return 0, fmt.Errorf("invalid candidate vote length %d", len(results))
+	}
+}
+
 func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 	bounds, err := getCandidateRegionBounds(lines)
 	if err != nil {
@@ -106,16 +118,38 @@ func getCandidateVotes(lines []line) (*CandidateVotes, error) {
 	if err != nil {
 		panic(err)
 	}
-	cv := &CandidateVotes{
+	tot, err := getCVTotal(results)
+	if err != nil {
+		return nil, err
+	}
+	return &CandidateVotes{
 		Odinga:     results[0],
 		Ruto:       results[1],
 		Waihiga:    results[2],
 		Wajackoyah: results[3],
+		total:      tot,
+	}, nil
+}
+
+func getCandidateVotes2(total int, lines []line) (*CandidateVotes, error) {
+	bounds, err := getCandidateRegionBounds(lines)
+	if err != nil {
+		return nil, err
 	}
-	if len(results) == 5 {
-		cv.total = results[4]
-	} else {
-		cv.total = -1
-	}
-	return cv, nil
+	numericlines := filterLines(lines, func(l line) bool {
+		if _, err := strconv.Atoi(l.Text); err != nil {
+			return false
+		}
+		tl := l.Box.topleft()
+		return bounds.top <= tl.y && tl.y <= bounds.bot
+	})
+
+	sort.Slice(numericlines, func(i, j int) bool {
+		return numericlines[i].Box.topleft().y < numericlines[j].Box.topleft().y
+	})
+	top3lines := numericlines[:3]
+
+	fmt.Println(top3lines)
+
+	return nil, fmt.Errorf("NOT IMPLEMENTED")
 }

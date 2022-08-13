@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 )
 
 type point struct {
@@ -35,6 +36,15 @@ type line struct {
 	Text string      `json:"text"`
 }
 
+func (l *line) containsAny(ss []string) bool {
+	for _, s := range ss {
+		if strings.Contains(l.Text, s) {
+			return true
+		}
+	}
+	return false
+}
+
 func filterLines(lines []line, key func(line) bool) []line {
 	sieved := []line{}
 	for _, l := range lines {
@@ -53,13 +63,14 @@ func distYBR(l1, l2 *line) float64 {
 	return math.Abs(l1.Box.botright().y - l2.Box.botright().y)
 }
 
-func linesToPosInts(lines []line) ([]int, error) {
-	abs := func(n int) int {
-		if n > 0 {
-			return n
-		}
-		return -n
+func abs(n int) int {
+	if n > 0 {
+		return n
 	}
+	return -n
+}
+
+func linesToPosInts(lines []line) ([]int, error) {
 	results := make([]int, len(lines))
 	for i, l := range lines[:len(lines)] {
 		n, err := strconv.Atoi(l.Text)

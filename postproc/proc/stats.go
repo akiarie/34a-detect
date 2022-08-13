@@ -66,7 +66,6 @@ func getVoteStats(cv *CandidateVotes, lines []line) (*VoteStats, error) {
 	if err != nil {
 		panic(err)
 	}
-	// here:
 	if len(results) < 5 {
 		if cv.total == -1 || len(results) < 4 {
 			return nil, fmt.Errorf("no possible total value")
