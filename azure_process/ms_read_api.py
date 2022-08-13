@@ -17,7 +17,6 @@ def read_image(image_path, resize = False):
 def show_image(image, title="image"):
     cv2.imshow(title, image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
     
 class ReadApi():
     def __init__(self, image_path):
