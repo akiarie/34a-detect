@@ -23,6 +23,10 @@ readApi.visualize_results(read_result, result_image_name = output_path)
 lines = []
 for text_result in read_result.analyze_result.read_results:
     for line in text_result.lines:
-        lines += [{"bounding_box": line.bounding_box, "text": line.text}]
+        lines += [{
+            "bounding_box": line.bounding_box, 
+            "text": line.text,
+        }]
+ 
 
 print(json.dumps(lines))
