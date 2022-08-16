@@ -19,9 +19,9 @@ def show_image(image, title="image"):
     cv2.waitKey(0)
     
 class ReadApi():
-    def __init__(self, image_path):
+    def __init__(self, image_path, dotenv_path):
         super(ReadApi, self).__init__()
-        config = dotenv_values(".env")
+        config = dotenv_values(dotenv_path)
         computervision_client = ComputerVisionClient(
             config['ENDPOINT'], 
             CognitiveServicesCredentials(config['SUBSCRIPTION_KEY'])
