@@ -18,3 +18,5 @@ Then run the pre-processor as follows:
 python3 azure_process.py [input image] [output image]
 ```
 You should get a JSON array of the lines with their bounding boxes and text.
+
+ls ./py_txts | parallel python temp.py -f ./py_txts/{} -i ./py_images -e "jpg"
