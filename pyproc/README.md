@@ -5,7 +5,7 @@ __*Run processing on sample of the inputs :*__
 + Ensure GPU Parallel is installed
 + Ensure argparse installed 
 ```bash
-pip install argparse
+pip3 install argparse
 ```
 + _Input images to Azure Read API, pipe output streams to ./py_txts folder_
 ```bash
