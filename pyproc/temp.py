@@ -280,10 +280,10 @@ try:
 
 
         if votes_passed and stats_passed:
-            logging.info(f"{file.split('/')[-1][:-4].upper()}==")
-            logging.info(final_votes)
-            logging.info(f"{ file.split('/')[-1][:-4].upper()}==")
-            logging.info(final_stats)
+            print(f"{file.split('/')[-1][:-4].upper()} ==")
+            print(final_votes)
+            print(f"{ file.split('/')[-1][:-4].upper()} ==")
+            print(final_stats)
             lines_within_bounds = getLinesWithinBounds(lines, lower_bounds[1], declaration_bounds[1])
             stat_lines = allStatsLines(lines_within_bounds)
             drawOnImage(image, candidate_lines)
@@ -291,5 +291,6 @@ try:
             drawOnImage(image, candidate_votes_sorted)
             drawOnImage(image, other_votes_sorted)
             cv2.imwrite(f"./py_outputs/{file.split('/')[-1][:-4]}.{image_extension}", image)
+            print("Visualized image saved to ==> ./py_outputs/")
 except FileNotFoundError:
     logging.error(f"Check if file path {file} is correct!")
