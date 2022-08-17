@@ -2,7 +2,7 @@ __*Run processing on sample of the inputs :*__
 
 1. Python scripts
 
-+ Ensure GPU Parallel is installed
++ Ensure GNU Parallel is installed
 + Ensure argparse installed 
 ```bash
 pip3 install argparse
