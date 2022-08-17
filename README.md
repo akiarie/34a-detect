@@ -14,6 +14,26 @@ __*Run processing on sample of the inputs :*__
 
 1. Python scripts
 
+Requirements:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+Include your Azure credentials in an .env file:
+```bash
+ENDPOINT=         # Azure instance endpoint
+SUBSCRIPTION_KEY= # Azure subcription key
+```
+
+Then run the pre-processor as follows:
+```bash
+python3 azure_process.py [input image] [output image]
+```
+You should get a JSON array of the lines with their bounding boxes and text.
+
+#### OR 
+
 ```bash
 cd pyproc/
 ```
