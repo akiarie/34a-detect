@@ -4,7 +4,7 @@ _Scripts for converting IEBC Form 34As into JSON._
 Requirements:
 
 ```bash
-pip3 install -r requirements.json
+pip3 install -r requirements.txt
 ```
 
 Include your Azure credentials in an .env file:
