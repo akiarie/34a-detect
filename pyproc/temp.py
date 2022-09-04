@@ -2,7 +2,7 @@ import json
 import argparse
 import sys 
 import cv2 
-
+from typing import List, Dict, Tuple
 import logging
 
 from typing import Optional, Any
@@ -69,19 +69,19 @@ def showImage(image: cv2.Mat, title: str = "image") -> None:
 
 def drawOnImage(
     image: cv2.Mat, 
-    bounds:list[Line],
+    bounds:List[Line],
     color = (0, 0, 255)) -> None:
     thickness = 5
     for bound in bounds:
         top_left, bottom_right = TopLeftandBottomRight(bound)
         cv2.rectangle(image, top_left, bottom_right, color, thickness)
 
-def getUpperLowerDecBounds(lines: list[Line]) -> list[
+def getUpperLowerDecBounds(lines: List[Line]) -> List[
     Any
 ]:
-    upper_bounds: Optional[list[int]] = None
-    lower_bounds: Optional[list[int]] = None
-    declaration_bounds: Optional[list[int]] = None
+    upper_bounds: Optional[List[int]] = None
+    lower_bounds: Optional[List[int]] = None
+    declaration_bounds: Optional[List[int]] = None
     for line in lines:
         search_up = "number votes cast favour each candidate"
         search_down = "decision(s) on disputed votes if any"
@@ -97,12 +97,12 @@ def getUpperLowerDecBounds(lines: list[Line]) -> list[
     return [upper_bounds, lower_bounds, declaration_bounds]
 
 def getVotesInCriticalSection(
-    votes: list[Line],
-    upper_bounds: Optional[list[int]],
-    lower_bounds: Optional[list[int]],
-    declaration_bounds: Optional[list[int]],
+    votes: List[Line],
+    upper_bounds: Optional[List[int]],
+    lower_bounds: Optional[List[int]],
+    declaration_bounds: Optional[List[int]],
     x_filter_candidate_votes: int,
-) -> list[list[Line]]:
+) -> List[List[Line]]:
     candidate_votes_total = getCandidateVotesTotal(votes, upper_bounds, lower_bounds, x_filter_candidate_votes)
     other_votes_total = getOtherVotesTotal(votes, lower_bounds, declaration_bounds)
     return [
@@ -112,19 +112,19 @@ def getVotesInCriticalSection(
 
 
 def CandidatesVotes5(
-    candidate_votes_sorted: list[Line], 
-    final_votes: dict[str, int],
+    candidate_votes_sorted: List[Line], 
+    final_votes: Dict[str, int],
     ):
     primary_votes = [int(i['text']) for i in candidate_votes_sorted]
     final_votes = fillCandidateVotes(primary_votes, final_votes)
     return final_votes
 
 def CandidateVotes4(
-    candidate_lines: list[Line],
-    final_votes: dict[str, int], 
-    candidate_votes_sorted: list[Line],
+    candidate_lines: List[Line],
+    final_votes: Dict[str, int], 
+    candidate_votes_sorted: List[Line],
     reference_y: int,
-) -> tuple[dict[str, int], int]:
+) -> Tuple[Dict[str, int], int]:
     all_individual_votes = allIndividualVotesPresent(candidate_votes_sorted, reference_y)
     primary_votes = [int(i['text']) for i in candidate_votes_sorted]
     if len(all_individual_votes) == 4:
@@ -139,20 +139,20 @@ def CandidateVotes4(
         return final_votes, index
 
 def OtherVotes5(
-    other_votes_sorted: list[Line], 
-    final_stats: dict[str, int],
+    other_votes_sorted: List[Line], 
+    final_stats: Dict[str, int],
     ):
     secondary_votes = [int(i['text']) for i in other_votes_sorted]
     final_stats = fillVotesStats(secondary_votes, final_stats)
     return final_stats
 
 def OtherVotes4(
-    lines: list[Line],
+    lines: List[Line],
     lower_bounds: Any,
     declaration_bounds: Any,
-    other_votes_sorted: list[Line],
-    final_stats: dict[str, int],
-) -> tuple[dict[str, int], int]:
+    other_votes_sorted: List[Line],
+    final_stats: Dict[str, int],
+) -> Tuple[Dict[str, int], int]:
         lines_within_bounds = getLinesWithinBounds(lines, lower_bounds[1], declaration_bounds[1])
         stat_lines = allStatsLines(lines_within_bounds)
         secondary_votes = [int(i['text']) for i in other_votes_sorted]
@@ -163,38 +163,38 @@ def OtherVotes4(
         return final_stats, index
 
 def individualEqualsTotal(
-    final_votes: dict[str, int]
+    final_votes: Dict[str, int]
     ) -> bool:
     values = list(final_votes.values())
     verified = isCandidateVotesEqualsSum(values[:-1], values[-1])
     return verified
 
 def correctCandidatesTotal(
-    final_votes: dict[str, int], 
-    final_stats: dict[str, int], 
+    final_votes: Dict[str, int], 
+    final_stats: Dict[str, int], 
     total:int):
     if total == final_stats["validcast"]:
         final_votes['total'] = total 
     return final_votes
         
 def correctStatsTotal(
-    final_votes: dict[str, int],
-    final_stats: dict[str, int], 
+    final_votes: Dict[str, int],
+    final_stats: Dict[str, int], 
     total:int):
     if total == final_votes["total"]:
         final_stats["validcast"] = total 
     return final_stats
 
 def checkTwoTotals(
-    final_votes: dict[str, int], 
-    final_stats: dict[str, int]
+    final_votes: Dict[str, int], 
+    final_stats: Dict[str, int]
     ) -> bool:
     return final_votes['total'] == final_stats["validcast"]
 
 
 try:
     with open(file) as f:
-        lines: list[Line] = json.load(f)
+        lines: List[Line] = json.load(f)
         (
             upper_bounds, 
             lower_bounds,
@@ -212,7 +212,7 @@ try:
         if not (upper_bounds and lower_bounds):
             logging.error(f"{file} == Candidate vote bounds not found!")
             sys.exit(0)
-        votes: list[Line] = [line for line in lines if line['possible_vote']]
+        votes: List[Line] = [line for line in lines if line['possible_vote']]
 
         (
             candidate_votes_total,
@@ -221,8 +221,8 @@ try:
         image = getImage(file)
         len_candidate_votes_total = len(candidate_votes_total)
         len_other_votes_total = len(other_votes_total)
-        final_votes: dict[str, int] = InitCandidateVotes()
-        final_stats: dict[str, int] = initVotesStats()
+        final_votes: Dict[str, int] = InitCandidateVotes()
+        final_stats: Dict[str, int] = initVotesStats()
         candidate_votes_sorted = sortVotesByY(candidate_votes_total)
         other_votes_sorted = sortVotesByY(other_votes_total)
         

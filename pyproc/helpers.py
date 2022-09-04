@@ -1,7 +1,7 @@
-from typing import Optional, Any, TypedDict
+from typing import List, Optional, Any, TypedDict
 
 class Line(TypedDict):
-	bounding_box: list[int]
+	bounding_box: List[int]
 	text: str
 	possible_vote: bool
 
@@ -25,8 +25,8 @@ def stringHasSeqMin(s: str, word: str, min: int = 3) -> int:
 			index = -1
 	return result
 
-def getBounds(search_words: str, line: Line, min:int = 5) -> Optional[list[int]]:
-	bound: Optional[list[int]] = None
+def getBounds(search_words: str, line: Line, min:int = 5) -> Optional[List[int]]:
+	bound: Optional[List[int]] = None
 	suffices = stringHasSeqMin(
 	search_words.lower(), 
 	(line['text']).lower(),
@@ -36,24 +36,24 @@ def getBounds(search_words: str, line: Line, min:int = 5) -> Optional[list[int]]
 	return bound
 
 def TopLeftandBottomRight(bound: Line) -> \
-		list[list[int]]:
+		List[List[int]]:
 	top_left = [int(i) for i in bound['bounding_box'][:2]]
 	bottom_right = [int(i) for i in bound['bounding_box'][4:6]]
 	return [top_left, bottom_right]
 
-def sortVotesByY(votes: list[Line]) -> list[Line]:
+def sortVotesByY(votes: List[Line]) -> List[Line]:
 	sorted_votes = sorted(votes, key=lambda x: x['bounding_box'][1])
 	return sorted_votes
 
 def getCandidateVotesTotal(
-	votes: list[Line],
+	votes: List[Line],
 	upper_bounds: Any,
 	lower_bounds: Any,
 	x_filter_candidate_votes: int
-	) -> list[Line]:
+	) -> List[Line]:
 	upper_bottom_right_y = upper_bounds[5]
 	lower_bottom_right_y = lower_bounds[5]
-	votes_within_bounds: list[Line] = []
+	votes_within_bounds: List[Line] = []
 	for vote in votes:
 		vote_top_left, vote_bottom_right = TopLeftandBottomRight(vote)
 		if (
@@ -66,14 +66,14 @@ def getCandidateVotesTotal(
 
 
 def getOtherVotesTotal(
-	votes: list[Line],
+	votes: List[Line],
 	lower_bounds: Any,
 	declaration_bounds: Any
-	) -> list[Line]:
+	) -> List[Line]:
 	lower_bottom_right_y = lower_bounds[5]
 	declaration_bottom_right_x = declaration_bounds[4]
 	declaration_bottom_right_y = declaration_bounds[5]
-	votes_within_bounds: list[Line] = []
+	votes_within_bounds: List[Line] = []
 	for vote in votes:
 		_, vote_bottom_right = TopLeftandBottomRight(vote)
 		if (

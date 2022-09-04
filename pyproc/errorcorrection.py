@@ -1,6 +1,6 @@
 import re 
 from helpers import Line 
-from typing import Optional
+from typing import Optional, List, Tuple
 from helpers import getBounds
 
 from pprint import pprint
@@ -20,7 +20,7 @@ candidate_names = [
 		"WAJACKOYAH GEORGE LUCHIRI",
 ]
 
-def getLine(box: Optional[list[int]], text: str, possible: bool) -> Line:
+def getLine(box: Optional[List[int]], text: str, possible: bool) -> Line:
 	line = {
 		"bounding_box": box, 
 		"text" : text,
@@ -29,10 +29,10 @@ def getLine(box: Optional[list[int]], text: str, possible: bool) -> Line:
 	return line
 
 def getLinesWithinBounds(
-	lines: list[Line], 
+	lines: List[Line], 
 	upper_top_y: int, 
-	lower_top_y: int) -> list[Line]:
-	line_within_bounds: list[Line] = []
+	lower_top_y: int) -> List[Line]:
+	line_within_bounds: List[Line] = []
 	for line in lines:
 		if (
 			upper_top_y <
@@ -45,13 +45,13 @@ def getLinesWithinBounds(
 	return line_within_bounds
 
 def getRequiredLines(
-	lines_within_bounds: list[Line], 
+	lines_within_bounds: List[Line], 
 	candidate_name: str,
 	idx: int,
 	min: int
-	) -> tuple[Optional[list[int]], int]:
+	) -> Tuple[Optional[List[int]], int]:
 	return_index = -1
-	candidate_bounds: Optional[list[int]] = None
+	candidate_bounds: Optional[List[int]] = None
 	for index, line in enumerate(lines_within_bounds[idx:]):
 		bound = getBounds(candidate_name, line, min = min)
 		if bound is not None:
@@ -60,9 +60,9 @@ def getRequiredLines(
 			return candidate_bounds, return_index
 	return candidate_bounds, return_index
 
-def allCandidateLines(lines_within_bounds: list[Line], min: int = 2) -> list[Line]:
+def allCandidateLines(lines_within_bounds: List[Line], min: int = 2) -> List[Line]:
 	search_index = 0
-	candidate_lines: list[Line] = []
+	candidate_lines: List[Line] = []
 	for name in candidate_names:
 		bound, i = getRequiredLines(
 			lines_within_bounds, 
@@ -76,9 +76,9 @@ def allCandidateLines(lines_within_bounds: list[Line], min: int = 2) -> list[Lin
 	return candidate_lines
 
 
-def allStatsLines(lines_within_bounds: list[Line], min:int = 4):
+def allStatsLines(lines_within_bounds: List[Line], min:int = 4):
 	search_index = 0
-	candidate_lines: list[Line] = []
+	candidate_lines: List[Line] = []
 	for name in stats_names:
 		bound, i = getRequiredLines(
 			lines_within_bounds, 
@@ -92,16 +92,16 @@ def allStatsLines(lines_within_bounds: list[Line], min:int = 4):
 	return candidate_lines
 
 def getNearestVote(
-	candidate: Line, votes: list[Line]) -> Line:
+	candidate: Line, votes: List[Line]) -> Line:
 	sorted_y = sorted(votes, key = lambda x: abs(
 		candidate['bounding_box'][1] - x['bounding_box'][1]
 		))
 	return sorted_y[0]
 
 def getNearestVotes(
-	lines: list[Line], 
-	votes: list[Line]):
-	candidate_corresponding_vote:list[tuple[Line, Line]] = []
+	lines: List[Line], 
+	votes: List[Line]):
+	candidate_corresponding_vote:List[Tuple[Line, Line]] = []
 	for line in lines:
 		min_vote = getNearestVote(line, votes)
 		candidate_corresponding_vote.append( 
@@ -110,8 +110,8 @@ def getNearestVotes(
 	return candidate_corresponding_vote
 
 def getErroneousVote(
-	candidates: list[Line], 
-	votes: list[Line]
+	candidates: List[Line], 
+	votes: List[Line]
 ) -> Line:
 	corresponding_vote = getNearestVotes(candidates, votes)
 	erroneous_vote = sorted(
@@ -120,11 +120,11 @@ def getErroneousVote(
 		reverse = True)
 	return erroneous_vote[0][0]
 
-def allIndividualVotesPresent(votes: list[Line], threshold: int) -> list[Line]:
+def allIndividualVotesPresent(votes: List[Line], threshold: int) -> List[Line]:
 	filter_votes = lambda x: x['bounding_box'][1] < threshold
 	filtered =  list(filter(filter_votes, votes))
 	return filtered
 
-def sumAllVotes(all_votes: list[Line]) -> int:
+def sumAllVotes(all_votes: List[Line]) -> int:
 	return sum([int(i['text']) for i in all_votes])
 

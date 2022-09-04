@@ -1,6 +1,6 @@
+from typing import List, Dict 
 
-
-def initVotesStats() -> dict[str, int]:
+def initVotesStats() -> Dict[str, int]:
     return {
         "registered": 0,
         "rejected": 0,
@@ -10,8 +10,8 @@ def initVotesStats() -> dict[str, int]:
     }
 
 def fillVotesStats(
-    results: list[int],
-    stats: dict[str, int]) -> dict[str, int]:
+    results: List[int],
+    stats: Dict[str, int]) -> Dict[str, int]:
     stats["registered"] = results[0]
     stats["rejected"] = results[1]
     stats["rejectedObjected"] = results[2]
